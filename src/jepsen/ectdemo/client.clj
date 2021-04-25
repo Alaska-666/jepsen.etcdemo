@@ -2,12 +2,17 @@
   (:require [clojure.tools.logging :refer :all]
             [verschlimmbesserung.core :as v]
             [jepsen [client :as client]]
-            ))
+            [slingshot.slingshot :refer [try+]]))
 
 
 (defn r   [_ _] {:type :invoke, :f :read, :value nil})
 (defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
 (defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+
+(defn parse-long
+  "Parses a string to a Long. Passes through `nil`."
+  [s]
+  (when s (Long/parseLong s)))
 
 (defrecord Client [conn]
   client/Client
@@ -19,7 +24,16 @@
 
   (invoke! [this test op]
     (case (:f op)
-      :read (assoc op :type :ok, :value (v/get conn "foo"))))
+      :read (assoc op :type :ok, :value (parse-long (v/get conn "foo")))
+      :write (do (v/reset! conn "foo" (:value op))
+                 (assoc op :type :ok))
+      :cas (try+
+             (let [[old new] (:value op)]
+               (assoc op :type (if (v/cas! conn "foo" old new)
+                                 :ok
+                                 :fail)))
+             (catch [:errorCode 100] ex
+               (assoc op :type :fail, :error :not-found)))))
 
   (teardown! [this test])
 

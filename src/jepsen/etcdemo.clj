@@ -9,7 +9,6 @@
              [client :as client]])
   (:import (jepsen.ectdemo.client Client)))
 
-
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh,
   :concurrency ...), constructs a test map."
@@ -21,7 +20,7 @@
           :os              debian/os
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
-          :generator       (->> client/r
+          :generator       (->> (gen/mix [client/r client/w client/cas])
                                 (gen/stagger 1)
                                 (gen/nemesis nil)
                                 (gen/time-limit 15))}))
