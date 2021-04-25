@@ -4,7 +4,7 @@
             [jepsen
              [client :as client]
              [independent :as independent]]
-            [jepsen.etcdemo [db :as db]]
+            [jepsen.etcdemo [support :as s]]
             [slingshot.slingshot :refer [try+]])
   (:import (java.net SocketTimeoutException)))
 
@@ -21,7 +21,7 @@
 (defrecord Client [conn]
   client/Client
   (open! [this test node]
-    (assoc this :conn (v/connect (db/client-url node)
+    (assoc this :conn (v/connect (s/client-url node)
                                  {:timeout 5000})))
 
   (setup! [this test])

@@ -3,31 +3,8 @@
             [clojure.string :as str]
             [jepsen [control :as c]
              [db :as db]]
-            [jepsen.control.util :as cu]))
-
-(defn node-url
-  "An HTTP url for connecting to a node on a particular port."
-  [node port]
-  (str "http://" node ":" port))
-
-(defn peer-url
-  "The HTTP url for other peers to talk to a node."
-  [node]
-  (node-url node 2380))
-
-(defn client-url
-  "The HTTP url clients use to talk to a node."
-  [node]
-  (node-url node 2379))
-
-(defn initial-cluster
-  "Constructs an initial cluster string for a test, like
-  \"foo=foo:2380,bar=bar:2380,...\""
-  [test]
-  (->> (:nodes test)
-       (map (fn [node]
-              (str node "=" (peer-url node))))
-       (str/join ",")))
+            [jepsen.control.util :as cu]
+            [jepsen.etcdemo [support :as s]]))
 
 (def dir     "/opt/etcd")
 (def binary "etcd")
@@ -52,12 +29,12 @@
           binary
           :--log-output                   :stderr
           :--name                         (name node)
-          :--listen-peer-urls             (peer-url   node)
-          :--listen-client-urls           (client-url node)
-          :--advertise-client-urls        (client-url node)
+          :--listen-peer-urls             (s/peer-url   node)
+          :--listen-client-urls           (s/client-url node)
+          :--advertise-client-urls        (s/client-url node)
           :--initial-cluster-state        :new
-          :--initial-advertise-peer-urls  (peer-url node)
-          :--initial-cluster              (initial-cluster test))
+          :--initial-advertise-peer-urls  (s/peer-url node)
+          :--initial-cluster              (s/initial-cluster test))
 
         (Thread/sleep 10000)))
 

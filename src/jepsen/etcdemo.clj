@@ -10,7 +10,9 @@
             [jepsen.checker.timeline :as timeline]
             [jepsen.etcdemo
              [db :as db]
-             [client :as client]]
+             [client :as client]
+             [set :as set]
+             [support :as s]]
             [knossos.model :as model])
   (:import (jepsen.etcdemo.client Client)))
 
@@ -30,9 +32,14 @@
 
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh,
-  :concurrency ...), constructs a test map."
+  :concurrency ...), constructs a test map. Special options:
+
+      :quorum       Whether to use quorum reads
+      :rate         Approximate number of requests per second, per thread
+      :ops-per-key  Maximum number of operations allowed on any given key."
   [opts]
-  (let [quorum (boolean (:quorum opts))]
+  (let [quorum    (boolean (:quorum opts))
+        workload  (set/workload opts)]
     (merge tests/noop-test
            opts
            {:pure-generators true
@@ -63,11 +70,23 @@
                                           (gen/sleep 5)
                                           {:type :info, :f :stop}]
                                          cycle))
-                                  )
-            }
-           )
-    )
-  )
+                                  (gen/time-limit (:time-limit opts)))}
+           {:client    (:client workload)
+            :checker   (:checker workload)
+            :generator (gen/phases
+                         (->> (:generator workload)
+                              (gen/stagger (/ (:rate opts)))
+                              (gen/nemesis
+                                (cycle [(gen/sleep 5)
+                                        {:type :info, :f :start}
+                                        (gen/sleep 5)
+                                        {:type :info, :f :stop}]))
+                              (gen/time-limit (:time-limit opts)))
+                         (gen/log "Healing cluster")
+                         (gen/nemesis (gen/once {:type :info, :f :stop}))
+                         (gen/log "Waiting for recovery")
+                         (gen/sleep 10)
+                         (gen/clients (:final-generator workload)))})))
 
 
 (defn -main
