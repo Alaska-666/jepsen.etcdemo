@@ -3,6 +3,7 @@
             [jepsen [cli :as cli]
              [tests :as tests]
              [generator :as gen]
+             [independent :as independent]
              [nemesis :as nemesis]
              [checker :as checker]]
             [jepsen.os.debian :as debian]
@@ -25,20 +26,26 @@
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
           :nemesis         (nemesis/partition-random-halves)
-          :checker (checker/compose
-                     {:perf   (checker/perf)
-                      :linear (checker/linearizable
-                                {:model     (model/cas-register)
-                                 :algorithm :linear})
-                      :timeline (timeline/html)})
-          :generator (->> (gen/mix [client/r client/w client/cas])
-                          (gen/stagger 1/50)
-                          (gen/nemesis
-                            (cycle [(gen/sleep 5)
-                                    {:type :info, :f :start}
-                                    (gen/sleep 5)
-                                    {:type :info, :f :stop}]))
-                          (gen/time-limit (:time-limit opts)))}))
+          :checker   (checker/compose
+                       {:perf  (checker/perf)
+                        :indep (independent/checker
+                                 (checker/compose
+                                   {:linear   (checker/linearizable {:model (model/cas-register)
+                                                                     :algorithm :linear})
+                                    :timeline (timeline/html)}))})
+          :generator  (->> (independent/concurrent-generator
+                             10
+                             (range)
+                             (fn [k]
+                               (->> (gen/mix [client/r client/w client/cas])
+                                    (gen/stagger 1/50)
+                                    (gen/limit 100))))
+                           (gen/nemesis
+                             (cycle [(gen/sleep 5)
+                                     {:type :info, :f :start}
+                                     (gen/sleep 5)
+                                     {:type :info, :f :stop}]))
+                           (gen/time-limit (:time-limit opts)))}))
 
 
 (defn -main
