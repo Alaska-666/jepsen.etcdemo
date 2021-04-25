@@ -3,6 +3,7 @@
             [jepsen [cli :as cli]
              [tests :as tests]
              [generator :as gen]
+             [nemesis :as nemesis]
              [checker :as checker]]
             [jepsen.os.debian :as debian]
             [jepsen.checker.timeline :as timeline]
@@ -23,16 +24,22 @@
           :os              debian/os
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
+          :nemesis         (nemesis/partition-random-halves)
           :checker (checker/compose
                      {:perf   (checker/perf)
                       :linear (checker/linearizable
                                 {:model     (model/cas-register)
                                  :algorithm :linear})
                       :timeline (timeline/html)})
-          :generator       (->> (gen/mix [client/r client/w client/cas])
-                                (gen/stagger 1)
-                                (gen/nemesis nil)
-                                (gen/time-limit 15))}))
+          :generator (->> (gen/mix [client/r client/w client/cas])
+                          (gen/stagger 1/50)
+                          (gen/nemesis
+                            (cycle [(gen/sleep 5)
+                                    {:type :info, :f :start}
+                                    (gen/sleep 5)
+                                    {:type :info, :f :stop}]))
+                          (gen/time-limit (:time-limit opts)))}))
+
 
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for
