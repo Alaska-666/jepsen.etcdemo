@@ -20,11 +20,13 @@
           :os              debian/os
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
+          :checker         (checker/linearizable
+                             {:model     (model/cas-register)
+                              :algorithm :linear})
           :generator       (->> (gen/mix [client/r client/w client/cas])
                                 (gen/stagger 1)
                                 (gen/nemesis nil)
                                 (gen/time-limit 15))}))
-
 
 (defn -main
   "Handles command line arguments. Can either run a test, or a web server for
