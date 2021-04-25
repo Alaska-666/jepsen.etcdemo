@@ -1,4 +1,4 @@
-(ns jepsen.ectdemo.db
+(ns jepsen.etcdemo.db
   (:require [clojure.tools.logging :refer :all]
             [clojure.string :as str]
             [jepsen [control :as c]

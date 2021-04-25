@@ -4,10 +4,10 @@
              [tests :as tests]
              [generator :as gen]]
             [jepsen.os.debian :as debian]
-            [jepsen.ectdemo
+            [jepsen.etcdemo
              [db :as db]
              [client :as client]])
-  (:import (jepsen.ectdemo.client Client)))
+  (:import (jepsen.etcdemo.client Client)))
 
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh,

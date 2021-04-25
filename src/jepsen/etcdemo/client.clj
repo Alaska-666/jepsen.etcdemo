@@ -1,4 +1,4 @@
-(ns jepsen.ectdemo.client
+(ns jepsen.etcdemo.client
   (:require [clojure.tools.logging :refer :all]
             [verschlimmbesserung.core :as v]
             [jepsen [client :as client]]
