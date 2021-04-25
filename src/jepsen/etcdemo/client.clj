@@ -1,7 +1,10 @@
 (ns jepsen.etcdemo.client
   (:require [clojure.tools.logging :refer :all]
             [verschlimmbesserung.core :as v]
-            [jepsen [client :as client]]
+            [jepsen
+             [client :as client]
+             [independent :as independent]]
+            [jepsen.etcdemo [db :as db]]
             [slingshot.slingshot :refer [try+]])
   (:import (java.net SocketTimeoutException)))
 
@@ -18,7 +21,7 @@
 (defrecord Client [conn]
   client/Client
   (open! [this test node]
-    (assoc this :conn (v/connect (client-url node)
+    (assoc this :conn (v/connect (db/client-url node)
                                  {:timeout 5000})))
 
   (setup! [this test])
