@@ -46,7 +46,7 @@
   [["-w" "--workload NAME" "What workload should we run?"
     :missing  (str "--workload " (cli/one-of workloads))
     :validate [workloads (cli/one-of workloads)]]
-  [["-q" "--quorum" "Use quorum reads, instead of reading from any primary."]
+  ["-q" "--quorum" "Use quorum reads, instead of reading from any primary."]
    ["-r" "--rate HZ" "Approximate number of requests per second, per thread."
     :default  10
     :parse-fn read-string
