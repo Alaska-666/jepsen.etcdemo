@@ -16,12 +16,16 @@
 
 (defn etcd-test
   "Given an options map from the command line runner (e.g. :nodes, :ssh,
-  :concurrency ...), constructs a test map."
+  :concurrency ...), constructs a test map.
+  Special options:
+       :quorum     Whether to use quorum reads"
   [opts]
-  (merge tests/noop-test
+  (let [quorum (boolean (:quorum opts))]
+    (merge tests/noop-test
          opts
          {:pure-generators true
-          :name            "etcd"
+          :name            (str "etcd q=" quorum)
+          :quorum          quorum
           :os              debian/os
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
@@ -45,7 +49,7 @@
                                      {:type :info, :f :start}
                                      (gen/sleep 5)
                                      {:type :info, :f :stop}]))
-                           (gen/time-limit (:time-limit opts)))}))
+                           (gen/time-limit (:time-limit opts)))})))
 
 (def cli-opts
   "Additional command line options."
