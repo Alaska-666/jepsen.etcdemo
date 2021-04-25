@@ -2,11 +2,14 @@
   (:require [clojure.tools.logging :refer :all]
             [jepsen [cli :as cli]
              [tests :as tests]
-             [generator :as gen]]
+             [generator :as gen]
+             [checker :as checker]]
             [jepsen.os.debian :as debian]
+            [jepsen.checker.timeline :as timeline]
             [jepsen.etcdemo
              [db :as db]
-             [client :as client]])
+             [client :as client]]
+            [knossos.model :as model])
   (:import (jepsen.etcdemo.client Client)))
 
 (defn etcd-test
@@ -20,9 +23,12 @@
           :os              debian/os
           :db              (db/db "v3.1.5")
           :client          (Client. nil)
-          :checker         (checker/linearizable
-                             {:model     (model/cas-register)
-                              :algorithm :linear})
+          :checker (checker/compose
+                     {:perf   (checker/perf)
+                      :linear (checker/linearizable
+                                {:model     (model/cas-register)
+                                 :algorithm :linear})
+                      :timeline (timeline/html)})
           :generator       (->> (gen/mix [client/r client/w client/cas])
                                 (gen/stagger 1)
                                 (gen/nemesis nil)
